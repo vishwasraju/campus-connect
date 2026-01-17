@@ -76,7 +76,7 @@ export default function Landing() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">How It Works</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              CampusVoice provides a structured way for students to communicate with the administration.
+              Namma Voice provides a structured way for students to communicate with the administration.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -104,8 +104,8 @@ export default function Landing() {
                 Built for Transparency & Trust
               </h2>
               <p className="text-muted-foreground mb-8">
-                CampusVoice replaces informal feedback channels with a structured, 
-                transparent system that ensures every concern is documented and addressed.
+              Namma Voice replaces informal feedback channels with a structured, 
+              transparent system that ensures every concern is documented and addressed.
               </p>
               <ul className="space-y-3">
                 {benefits.map((benefit, index) => (
@@ -120,9 +120,9 @@ export default function Landing() {
               <div className="aspect-video rounded-xl bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 flex items-center justify-center border border-border">
                 <div className="text-center p-8">
                   <div className="h-16 w-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
-                    CV
+                    NV
                   </div>
-                  <p className="text-lg font-medium">CampusVoice</p>
+                  <p className="text-lg font-medium">Namma Voice</p>
                   <p className="text-sm text-muted-foreground">Making every voice count</p>
                 </div>
               </div>
@@ -152,12 +152,12 @@ export default function Landing() {
         <div className="container flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-              CV
+              NV
             </div>
-            <span className="font-semibold">CampusVoice</span>
+            <span className="font-semibold">Namma Voice</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © 2024 CampusVoice. For internal college use only.
+            © 2024 Namma Voice. For internal college use only.
           </p>
         </div>
       </footer>

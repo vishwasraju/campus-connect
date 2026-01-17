@@ -17,10 +17,10 @@ export function Header({ user, onLogout, onCreatePost }: HeaderProps) {
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-            CV
+            NV
           </div>
           <span className="hidden font-semibold text-lg sm:inline-block">
-            CampusVoice
+            Namma Voice
           </span>
         </Link>
 
