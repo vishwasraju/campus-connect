@@ -48,8 +48,7 @@ export default function Landing() {
               For Students, By Students
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-              Your Campus,{' '}
-              <span className="text-primary">Your Voice</span>
+              <span className="text-primary">Namma Voice</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               A safe, organized platform for students to raise complaints and suggestions. 
