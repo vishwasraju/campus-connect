@@ -85,7 +85,7 @@ export default function StudentLogin() {
         <Card>
           <CardHeader className="text-center">
             <div className="h-12 w-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 font-bold text-lg">
-              CV
+              NV
             </div>
             <CardTitle>Student Login</CardTitle>
             <CardDescription>
