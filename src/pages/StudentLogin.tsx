@@ -103,7 +103,11 @@ export default function StudentLogin() {
     
     setIsLoading(false);
     toast.success('Login successful!');
-    navigate('/feed');
+    
+    // Navigate to feed - using replace to prevent back button returning to login
+    setTimeout(() => {
+      navigate('/feed', { replace: true });
+    }, 100);
   };
 
   return (
