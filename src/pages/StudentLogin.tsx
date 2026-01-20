@@ -38,7 +38,21 @@ export default function StudentLogin() {
     }
 
     // Check if user is registered
-    const existingUsers: RegisteredUser[] = JSON.parse(localStorage.getItem('nammavoice_users') || '[]');
+    let existingUsers: RegisteredUser[] = JSON.parse(localStorage.getItem('nammavoice_users') || '[]');
+    
+    // Add demo user if not exists
+    const demoUser: RegisteredUser = {
+      id: 'demo-001',
+      usn: '1RV21CS001',
+      name: 'Demo Student',
+      phone: '9876543210',
+      createdAt: new Date().toISOString()
+    };
+    if (!existingUsers.some(u => u.usn === demoUser.usn)) {
+      existingUsers.push(demoUser);
+      localStorage.setItem('nammavoice_users', JSON.stringify(existingUsers));
+    }
+    
     const foundUser = existingUsers.find((u) => u.usn === usn.toUpperCase());
     
     if (!foundUser) {
