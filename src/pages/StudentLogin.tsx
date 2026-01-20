@@ -8,13 +8,23 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-type Step = 'studentId' | 'otp';
+type Step = 'usn' | 'otp';
+
+interface RegisteredUser {
+  id: string;
+  usn: string;
+  name: string;
+  phone: string;
+  createdAt: string;
+}
 
 export default function StudentLogin() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<Step>('studentId');
-  const [studentId, setStudentId] = useState('');
+  const [step, setStep] = useState<Step>('usn');
+  const [usn, setUsn] = useState('');
   const [otp, setOtp] = useState('');
+  const [generatedOtp, setGeneratedOtp] = useState('');
+  const [currentUser, setCurrentUser] = useState<RegisteredUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -22,24 +32,33 @@ export default function StudentLogin() {
     e.preventDefault();
     setError('');
     
-    if (!studentId.trim()) {
-      setError('Please enter your Student ID');
+    if (!usn.trim()) {
+      setError('Please enter your USN');
       return;
     }
 
-    if (studentId.length < 3) {
-      setError('Please enter a valid Student ID');
+    // Check if user is registered
+    const existingUsers: RegisteredUser[] = JSON.parse(localStorage.getItem('nammavoice_users') || '[]');
+    const foundUser = existingUsers.find((u) => u.usn === usn.toUpperCase());
+    
+    if (!foundUser) {
+      setError('USN not registered. Please signup first.');
       return;
     }
 
+    setCurrentUser(foundUser);
     setIsLoading(true);
     
-    // Simulate OTP sending
+    // Generate OTP
+    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedOtp(newOtp);
+    
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     setIsLoading(false);
     setStep('otp');
-    toast.success('OTP sent to your registered mobile number');
+    toast.success(`OTP sent to ****${foundUser.phone.slice(-4)}`);
+    toast.info(`Demo OTP: ${newOtp}`, { duration: 10000 });
   };
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
@@ -51,23 +70,25 @@ export default function StudentLogin() {
       return;
     }
 
+    if (otp !== generatedOtp) {
+      setError('Invalid OTP. Please try again.');
+      return;
+    }
+
     setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Simulate OTP verification
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // For demo, accept any 6-digit OTP
-    setIsLoading(false);
-    toast.success('Login successful!');
-    
-    // Store mock user in localStorage for demo
-    localStorage.setItem('campusvoice_user', JSON.stringify({
-      id: '1',
-      studentId: studentId,
-      name: 'Student User',
+    // Login the user
+    localStorage.setItem('nammavoice_user', JSON.stringify({
+      id: currentUser?.id,
+      studentId: currentUser?.usn,
+      name: currentUser?.name,
+      phone: currentUser?.phone,
       role: 'student'
     }));
     
+    setIsLoading(false);
+    toast.success('Login successful!');
     navigate('/feed');
   };
 
@@ -89,22 +110,22 @@ export default function StudentLogin() {
             </div>
             <CardTitle>Student Login</CardTitle>
             <CardDescription>
-              {step === 'studentId' 
-                ? 'Enter your Student ID to receive an OTP'
+              {step === 'usn' 
+                ? 'Enter your USN to receive an OTP'
                 : 'Enter the OTP sent to your mobile'
               }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {step === 'studentId' ? (
+            {step === 'usn' ? (
               <form onSubmit={handleSendOTP} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="studentId">Student ID</Label>
+                  <Label htmlFor="usn">USN (University Seat Number)</Label>
                   <Input
-                    id="studentId"
-                    placeholder="e.g., STU2024001"
-                    value={studentId}
-                    onChange={(e) => setStudentId(e.target.value.toUpperCase())}
+                    id="usn"
+                    placeholder="e.g., 1RV21CS001"
+                    value={usn}
+                    onChange={(e) => setUsn(e.target.value.toUpperCase())}
                     className={error ? 'border-destructive' : ''}
                     disabled={isLoading}
                   />
@@ -130,10 +151,10 @@ export default function StudentLogin() {
                     <Label>One-Time Password</Label>
                     <button 
                       type="button" 
-                      onClick={() => setStep('studentId')}
+                      onClick={() => { setStep('usn'); setOtp(''); }}
                       className="text-xs text-primary hover:underline"
                     >
-                      Change Student ID
+                      Change USN
                     </button>
                   </div>
                   <div className="flex justify-center py-2">
@@ -157,7 +178,7 @@ export default function StudentLogin() {
                     <p className="text-xs text-destructive text-center">{error}</p>
                   )}
                   <p className="text-xs text-muted-foreground text-center">
-                    OTP sent to mobile ending in ****1234
+                    OTP sent to ****{currentUser?.phone.slice(-4)}
                   </p>
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading || otp.length !== 6}>
@@ -177,7 +198,11 @@ export default function StudentLogin() {
                   type="button" 
                   variant="ghost" 
                   className="w-full" 
-                  onClick={() => toast.info('OTP resent!')}
+                  onClick={() => {
+                    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+                    setGeneratedOtp(newOtp);
+                    toast.info(`New Demo OTP: ${newOtp}`, { duration: 10000 });
+                  }}
                   disabled={isLoading}
                 >
                   Resend OTP
@@ -185,7 +210,13 @@ export default function StudentLogin() {
               </form>
             )}
 
-            <div className="mt-6 pt-6 border-t border-border text-center">
+            <div className="mt-6 pt-6 border-t border-border space-y-3 text-center">
+              <p className="text-sm text-muted-foreground">
+                Don't have an account?{' '}
+                <Link to="/signup" className="text-primary hover:underline font-medium">
+                  Signup here
+                </Link>
+              </p>
               <p className="text-sm text-muted-foreground">
                 Are you an admin?{' '}
                 <Link to="/admin-login" className="text-primary hover:underline">
@@ -195,10 +226,6 @@ export default function StudentLogin() {
             </div>
           </CardContent>
         </Card>
-
-        <p className="text-xs text-muted-foreground text-center mt-4">
-          For demo: Enter any Student ID and use any 6-digit OTP
-        </p>
       </div>
     </div>
   );
