@@ -163,7 +163,11 @@ export default function StudentSignup() {
 
     setIsLoading(false);
     toast.success('Account created successfully!');
-    navigate('/feed');
+    
+    // Small delay to ensure toast is shown, then navigate
+    setTimeout(() => {
+      navigate('/feed', { replace: true });
+    }, 500);
   };
 
   return (
