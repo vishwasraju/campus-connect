@@ -1,11 +1,12 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, DragEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { ArrowLeft, Loader2, CheckCircle, Upload, Camera, Wand2, Edit3 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, Loader2, CheckCircle, Upload, Camera, Wand2, Edit3, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Step = 'method' | 'upload' | 'details' | 'otp';
@@ -15,7 +16,19 @@ interface StudentData {
   usn: string;
   name: string;
   phone: string;
+  countryCode: string;
 }
+
+const countryCodes = [
+  { code: '+91', country: 'IN', flag: '🇮🇳' },
+  { code: '+1', country: 'US', flag: '🇺🇸' },
+  { code: '+44', country: 'UK', flag: '🇬🇧' },
+  { code: '+971', country: 'AE', flag: '🇦🇪' },
+  { code: '+65', country: 'SG', flag: '🇸🇬' },
+  { code: '+61', country: 'AU', flag: '🇦🇺' },
+  { code: '+49', country: 'DE', flag: '🇩🇪' },
+  { code: '+33', country: 'FR', flag: '🇫🇷' },
+];
 
 export default function StudentSignup() {
   const navigate = useNavigate();
@@ -24,31 +37,59 @@ export default function StudentSignup() {
   const [step, setStep] = useState<Step>('method');
   const [method, setMethod] = useState<Method | null>(null);
   const [idCardImage, setIdCardImage] = useState<string | null>(null);
-  const [studentData, setStudentData] = useState<StudentData>({ usn: '', name: '', phone: '' });
+  const [studentData, setStudentData] = useState<StudentData>({ usn: '', name: '', phone: '', countryCode: '+91' });
   const [otp, setOtp] = useState('');
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleMethodSelect = (selectedMethod: Method) => {
     setMethod(selectedMethod);
     setStep('upload');
   };
 
+  const processFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setIdCardImage(event.target?.result as string);
+      setError('');
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
-        setError('Please upload an image file');
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setIdCardImage(event.target?.result as string);
-        setError('');
-      };
-      reader.readAsDataURL(file);
+      processFile(file);
+    }
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFile(file);
     }
   };
 
@@ -62,7 +103,8 @@ export default function StudentSignup() {
     return {
       usn: mockUSNs[index],
       name: mockNames[index],
-      phone: mockPhones[index]
+      phone: mockPhones[index],
+      countryCode: '+91'
     };
   };
 
@@ -254,13 +296,22 @@ export default function StudentSignup() {
                   </div>
                 ) : (
                   <div 
-                    className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                      isDragging 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary'
+                    }`}
                     onClick={() => fileInputRef.current?.click()}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
                   >
-                    <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                    <p className="text-sm font-medium">Click to upload ID card</p>
+                    <Upload className={`h-10 w-10 mx-auto mb-3 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <p className="text-sm font-medium">
+                      {isDragging ? 'Drop your ID card here' : 'Click to upload or drag and drop'}
+                    </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      or take a photo using camera
+                      PNG, JPG or take a photo using camera
                     </p>
                   </div>
                 )}
@@ -321,14 +372,35 @@ export default function StudentSignup() {
 
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="e.g., 9876543210"
-                    value={studentData.phone}
-                    onChange={(e) => setStudentData({ ...studentData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                    disabled={isLoading}
-                  />
+                  <div className="flex gap-2">
+                    <Select
+                      value={studentData.countryCode}
+                      onValueChange={(value) => setStudentData({ ...studentData, countryCode: value })}
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger className="w-[100px]">
+                        <SelectValue>
+                          {countryCodes.find(c => c.code === studentData.countryCode)?.flag} {studentData.countryCode}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {countryCodes.map((country) => (
+                          <SelectItem key={country.code} value={country.code}>
+                            {country.flag} {country.code}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="e.g., 9876543210"
+                      className="flex-1"
+                      value={studentData.phone}
+                      onChange={(e) => setStudentData({ ...studentData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                      disabled={isLoading}
+                    />
+                  </div>
                 </div>
 
                 {error && (
