@@ -29,7 +29,7 @@ export default function StudentFeed() {
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    const stored = localStorage.getItem('campusvoice_user');
+    const stored = localStorage.getItem('nammavoice_user');
     if (stored) {
       setUser(JSON.parse(stored));
     } else {
@@ -38,7 +38,7 @@ export default function StudentFeed() {
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem('campusvoice_user');
+    localStorage.removeItem('nammavoice_user');
     toast.success('Logged out successfully');
     navigate('/');
   };
