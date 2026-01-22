@@ -16,12 +16,16 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { isAuthenticated } from './auth';
+
+const API_BASE = "http://localhost:3000/api";
 
 type SortOption = 'trending' | 'latest';
 
 export default function StudentFeed() {
+
   const navigate = useNavigate();
-  const [user, setUser] = useState<{ name: string; role: 'student' | 'admin' } | null>(null);
+  const [user, setUser] = useState<{ name: string; studentId: string; role: 'student' | 'admin' } | null>(null);
   const [posts, setPosts] = useState<Post[]>(mockPosts);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,16 +33,20 @@ export default function StudentFeed() {
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    const stored = localStorage.getItem('campusvoice_user');
-    if (stored) {
+    if (isAuthenticated()) {
+      const stored = localStorage.getItem('campusVoice-user');
+      console.log("This is the stored: ", stored);
       setUser(JSON.parse(stored));
     } else {
       navigate('/login');
     }
   }, [navigate]);
 
+  console.log("This is the user: ", user);
+
   const handleLogout = () => {
-    localStorage.removeItem('campusvoice_user');
+    localStorage.removeItem('campusVoice-user');
+    localStorage.removeItem('token');
     toast.success('Logged out successfully');
     navigate('/');
   };
@@ -56,24 +64,55 @@ export default function StudentFeed() {
     }));
   };
 
-  const handleCreatePost = (data: {
+  const handleCreatePost = async (data: {
     title: string;
     description: string;
     category: Category;
-    visibility: 'public' | 'private';
+    visibility: 'Public' | 'Anonymous';
   }) => {
-    const newPost: Post = {
-      id: String(Date.now()),
-      ...data,
-      authorId: user?.name || 'unknown',
-      authorName: data.visibility === 'private' ? 'Anonymous' : user?.name || 'Student',
-      upvotes: 1,
-      hasUpvoted: true,
-      commentsCount: 0,
-      createdAt: new Date(),
-    };
-    setPosts([newPost, ...posts]);
-    toast.success('Post created successfully!');
+
+    try{
+
+
+      const res = await fetch(`${API_BASE}/post`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+        body: JSON.stringify({category: data.category, title: data.title, description: data.description, postVisibility: data.visibility})
+      }
+    });
+
+      const serverdata = await res.json();
+
+      if(!res.ok){
+        throw new Error(serverdata.message || "Something went wrong");
+      }
+
+      // setPosts([newPost, ...posts]);
+      toast.success('Post created successfully!');
+
+
+    } catch(err){
+      throw new Error(err.message);
+    } finally{
+      console.log("Post created sucessfully");
+    }
+
+    
+
+
+    // const newPost: Post = {
+    //   id: String(Date.now()),
+    //   ...data,
+    //   authorId: user?.name || 'unknown',
+    //   authorName: data.visibility === 'Anonymous' ? 'Anonymous' : user?.name || 'Student',
+    //   upvotes: 1,
+    //   hasUpvoted: true,
+    //   commentsCount: 0,
+    //   createdAt: new Date(),
+    // };
+    
   };
 
   const toggleCategory = (category: Category) => {

@@ -4,7 +4,7 @@ import { MessageSquarePlus, LayoutDashboard, LogOut, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface HeaderProps {
-  user?: { name: string; role: 'student' | 'admin' } | null;
+  user?: { name: string; studentId: string; role: 'student' | 'admin' } | null;
   onLogout?: () => void;
   onCreatePost?: () => void;
 }

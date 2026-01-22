@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { isAuthenticated } from './auth';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -46,11 +47,12 @@ export default function AdminDashboard() {
   const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'public' | 'private'>('all');
 
   useEffect(() => {
-    const stored = localStorage.getItem('campusvoice_user');
-    if (stored) {
+    
+    if (isAuthenticated()) {
+      const stored = localStorage.getItem('campusVoice-user');
       const parsed = JSON.parse(stored);
       if (parsed.role !== 'admin') {
-        navigate('/feed');
+        navigate('/admin-login');
         return;
       }
       setUser(parsed);

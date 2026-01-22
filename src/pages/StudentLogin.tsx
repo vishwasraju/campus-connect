@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { isAuthenticated } from './auth';
+
+const API_BASE = "http://localhost:3000/auth";
+
 
 type Step = 'studentId' | 'otp';
 
@@ -17,6 +21,11 @@ export default function StudentLogin() {
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [resendOTPTimer, setResendOTPTimer] = useState(10);
+
+  useEffect(() => {
+    return isAuthenticated() ? navigate("/feed") : console.log("User not logged in");
+  });
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,13 +43,44 @@ export default function StudentLogin() {
 
     setIsLoading(true);
     
-    // Simulate OTP sending
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
+    try {
+    const res = await fetch(`${API_BASE}/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ "studentID": studentId}),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to send OTP");
+    }
+
+    toast.success("OTP sent to your registered email");
+    setStep("otp");
+
+  } catch (err: any) {
+    setError(err.message);
+  } finally {
     setIsLoading(false);
-    setStep('otp');
-    toast.success('OTP sent to your registered mobile number');
+  }
+
   };
+
+  useEffect(() => {
+  if (step !== 'otp') return;
+  if (resendOTPTimer <= 0) return;
+
+  const interval = setInterval(() => {
+    setResendOTPTimer(prev => prev - 1);
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [step, resendOTPTimer]);
+
+
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,25 +91,53 @@ export default function StudentLogin() {
       return;
     }
 
+    console.log(JSON.stringify({"studentID":studentId, "otp": otp}));
+
     setIsLoading(true);
-    
-    // Simulate OTP verification
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // For demo, accept any 6-digit OTP
-    setIsLoading(false);
-    toast.success('Login successful!');
-    
-    // Store mock user in localStorage for demo
-    localStorage.setItem('campusvoice_user', JSON.stringify({
-      id: '1',
-      studentId: studentId,
-      name: 'Student User',
-      role: 'student'
-    }));
-    
-    navigate('/feed');
+
+    try{
+
+      const res = await fetch(`${API_BASE}/login/verify-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({"studentID": studentId, "otp": otp})
+      });
+
+      const data = await res.json();
+      console.log(data);
+
+      if(!res.ok){
+        throw new Error(data.message || "Failed to verify OTP");
+      }
+
+      localStorage.setItem('token', data.token);
+
+
+      localStorage.setItem(
+        "campusVoice-user",
+        JSON.stringify({
+          name: data.name,
+          studentID: studentId,
+          role: data.role,
+        })
+      );
+
+      toast.success('Login successful');
+      navigate('/feed');
+
+    } catch(err: any){
+        setError(err.message);
+    } finally{
+        setIsLoading(false);
+    }
   };
+
+  const handleResendOTP = () => {
+    setResendOTPTimer(10);
+    console.log("Resend OTP is asked.");
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -177,15 +245,24 @@ export default function StudentLogin() {
                   type="button" 
                   variant="ghost" 
                   className="w-full" 
-                  onClick={() => toast.info('OTP resent!')}
-                  disabled={isLoading}
+                  onClick={() => {toast.info('OTP resent!'); handleResendOTP();}}
+                  disabled={resendOTPTimer > 0 || isLoading}
                 >
-                  Resend OTP
+                  {resendOTPTimer > 0
+                    ? `Resend OTP in ${resendOTPTimer}s` :
+                    'Resend OTP'
+                  }
                 </Button>
               </form>
             )}
 
-            <div className="mt-6 pt-6 border-t border-border text-center">
+            <div className="mt-6 pt-6 border-t border-border space-y-3 text-center">
+              <p className="text-sm text-muted-foreground">
+                Don't have an account?{' '}
+                <Link to="/signup" className="text-primary hover:underline font-medium">
+                  Signup here
+                </Link>
+              </p>
               <p className="text-sm text-muted-foreground">
                 Are you an admin?{' '}
                 <Link to="/admin-login" className="text-primary hover:underline">
