@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { PostCard } from '@/components/PostCard';
 import { CreatePostDialog } from '@/components/CreatePostDialog';
+import { PostDetailDialog } from '@/components/PostDetailDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -24,6 +25,7 @@ export default function StudentFeed() {
   const [user, setUser] = useState<{ name: string; role: 'student' | 'admin' } | null>(null);
   const [posts, setPosts] = useState<Post[]>(mockPosts);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('trending');
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
@@ -182,7 +184,7 @@ export default function StudentFeed() {
                   key={post.id}
                   post={post}
                   onUpvote={handleUpvote}
-                  onClick={(p) => toast.info(`Opening post: ${p.title}`)}
+                  onClick={(p) => setSelectedPost(p)}
                 />
               ))
             )}
@@ -194,6 +196,14 @@ export default function StudentFeed() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onSubmit={handleCreatePost}
+      />
+
+      <PostDetailDialog
+        post={selectedPost}
+        open={!!selectedPost}
+        onOpenChange={(open) => !open && setSelectedPost(null)}
+        onUpvote={handleUpvote}
+        userName={user?.name || 'Student'}
       />
     </div>
   );
