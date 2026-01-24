@@ -8,7 +8,7 @@ import { ArrowLeft, Loader2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { isAuthenticated } from './auth';
 
-const API_BASE = "http://localhost:3000/auth";
+const API_BASE = "https://campus-connect-phi-lime.vercel.app/auth";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
