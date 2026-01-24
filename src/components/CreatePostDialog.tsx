@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CATEGORIES, Category, PostVisibility } from '@/lib/types';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
 
 interface CreatePostDialogProps {
   open: boolean;
@@ -18,13 +18,14 @@ interface CreatePostDialogProps {
     category: Category;
     visibility: PostVisibility;
   }) => void;
+  setLoading: boolean;
 }
 
-export function CreatePostDialog({ open, onOpenChange, onSubmit }: CreatePostDialogProps) {
+export function CreatePostDialog({ open, onOpenChange, onSubmit, setLoading }: CreatePostDialogProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<Category | ''>('');
-  const [visibility, setVisibility] = useState<PostVisibility>('public');
+  const [visibility, setVisibility] = useState<PostVisibility>('Public');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -48,7 +49,7 @@ export function CreatePostDialog({ open, onOpenChange, onSubmit }: CreatePostDia
     setTitle('');
     setDescription('');
     setCategory('');
-    setVisibility('public');
+    setVisibility('Public');
     setErrors({});
     onOpenChange(false);
   };
@@ -130,12 +131,12 @@ export function CreatePostDialog({ open, onOpenChange, onSubmit }: CreatePostDia
               <Label 
                 htmlFor="public" 
                 className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                  visibility === 'public' 
+                  visibility === 'Public' 
                     ? 'border-primary bg-primary/5' 
                     : 'border-border hover:border-primary/50'
                 }`}
               >
-                <RadioGroupItem value="public" id="public" />
+                <RadioGroupItem value="Public" id="public" />
                 <div className="flex-1">
                   <div className="flex items-center gap-1.5 font-medium">
                     <Eye className="h-4 w-4" />
@@ -147,12 +148,12 @@ export function CreatePostDialog({ open, onOpenChange, onSubmit }: CreatePostDia
               <Label 
                 htmlFor="private" 
                 className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                  visibility === 'private' 
+                  visibility === 'Anonymous' 
                     ? 'border-primary bg-primary/5' 
                     : 'border-border hover:border-primary/50'
                 }`}
               >
-                <RadioGroupItem value="private" id="private" />
+                <RadioGroupItem value="Anonymous" id="private" />
                 <div className="flex-1">
                   <div className="flex items-center gap-1.5 font-medium">
                     <EyeOff className="h-4 w-4" />
@@ -168,7 +169,19 @@ export function CreatePostDialog({ open, onOpenChange, onSubmit }: CreatePostDia
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">Post</Button>
+            <Button type="submit">
+              
+                  {setLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Posting...
+                    </>
+                  ) : (
+                    <>
+                      Post
+                    </>
+                  )}
+            </Button>
           </div>
         </form>
       </DialogContent>

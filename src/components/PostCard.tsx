@@ -1,4 +1,4 @@
-import { Post } from '@/lib/types';
+import { RealPost } from '@/lib/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { CategoryBadge } from '@/components/CategoryBadge';
 import { UpvoteButton } from '@/components/UpvoteButton';
@@ -7,9 +7,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface PostCardProps {
-  post: Post;
+  post: RealPost;
   onUpvote: (postId: string) => void;
-  onClick?: (post: Post) => void;
+  onClick?: (post: RealPost) => void;
 }
 
 export function PostCard({ post, onUpvote, onClick }: PostCardProps) {
@@ -28,15 +28,15 @@ export function PostCard({ post, onUpvote, onClick }: PostCardProps) {
             className="flex-shrink-0"
           >
             <UpvoteButton
-              count={post.upvotes}
+              count={Number(post.upVotes)}
               hasUpvoted={post.hasUpvoted}
-              onUpvote={() => onUpvote(post.id)}
+              onUpvote={() => onUpvote(post._id)}
             />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-2">
               <CategoryBadge category={post.category} />
-              {post.visibility === 'private' ? (
+              {post.postVisibility === 'Anonymous' ? (
                 <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                   <EyeOff className="h-3 w-3" />
                   Anonymous
@@ -44,7 +44,7 @@ export function PostCard({ post, onUpvote, onClick }: PostCardProps) {
               ) : (
                 <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                   <Eye className="h-3 w-3" />
-                  {post.authorName}
+                  {post.name}
                 </span>
               )}
             </div>

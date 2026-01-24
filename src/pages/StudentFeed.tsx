@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mockPosts } from '@/lib/mockData';
-import { Post, Category, CATEGORIES } from '@/lib/types';
-import { Search, TrendingUp, Clock, Filter } from 'lucide-react';
+import { Category, CATEGORIES, RealPost } from '@/lib/types';
+import { Search, TrendingUp, Clock, Filter, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
@@ -16,6 +16,7 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { AnimatePresence, motion } from 'framer-motion';
 import { isAuthenticated } from './auth';
 
 const API_BASE = "http://localhost:3000/api";
@@ -26,14 +27,16 @@ export default function StudentFeed() {
 
   const navigate = useNavigate();
   const [user, setUser] = useState<{ name: string; studentId: string; role: 'student' | 'admin' } | null>(null);
-  const [posts, setPosts] = useState<Post[]>(mockPosts);
+  const [posts, setPosts] = useState<RealPost[]>([]);
+  const [realPosts, setRealPosts] = useState<RealPost[]>([]);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('trending');
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated()) {
+    if (isAuthenticated('student')) {
       const stored = localStorage.getItem('campusVoice-user');
       console.log("This is the stored: ", stored);
       setUser(JSON.parse(stored));
@@ -41,6 +44,10 @@ export default function StudentFeed() {
       navigate('/login');
     }
   }, [navigate]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
 
   console.log("This is the user: ", user);
 
@@ -51,17 +58,101 @@ export default function StudentFeed() {
     navigate('/');
   };
 
-  const handleUpvote = (postId: string) => {
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
+  const handleUpvote = async (postId: string) => {
+  setPosts(prevPosts =>
+    prevPosts.map(post => {
+      if (post._id === postId) {
+        const hasUpvoted = post.hasUpvoted;
+
         return {
           ...post,
-          upvotes: post.hasUpvoted ? post.upvotes - 1 : post.upvotes + 1,
-          hasUpvoted: !post.hasUpvoted,
+          upVotes: hasUpvoted
+            ? Number(post.upVotes) - 1
+            : Number(post.upVotes) + 1,
+          hasUpvoted: !hasUpvoted,
+          hasPendingVote: true
         };
       }
       return post;
-    }));
+    })
+  );
+
+  try{
+
+    const res = await fetch(`${API_BASE}/post/${postId}/vote`, {
+      method: "POST",
+      headers: {
+        "Content-Type":"Aplication/json",
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    const data = await res.json();
+
+    if(!res.ok){
+      throw new Error(data.message || "Internal server Error");
+    }
+
+    setPosts(prev =>
+      prev.map(post => 
+        post._id === postId 
+        ? {...post, hasPendingVote: false}
+        : post
+      )
+    );
+
+  } catch(err){
+    
+    setPosts(prev =>
+      prev.map(post =>
+        post._id === postId
+          ? {
+              ...post,
+              upVotes: post.hasUpvoted ? post.upVotes - 1 : post.upVotes + 1,
+              hasUpvoted: !post.hasUpvoted,
+              hasPendingVote: false
+            }
+          : post
+      )
+    );
+    
+  }
+
+};
+
+useEffect(() => {
+  console.log("The new Data: ", posts);
+}, [posts]);
+
+
+  const fetchPosts = async () => {
+    try{
+
+      const res = await fetch(`${API_BASE}/posts`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "Application/json",
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+
+      const data = await res.json();
+
+       if(!res.ok){
+        throw new Error(data.message || "Internal server Error");
+      }
+
+      console.log("Mock data: ", mockPosts);
+
+      setPosts(data);
+
+      console.log("Posts data received from server: ", data);
+
+    } catch(err){
+      throw new Error(err.message);
+    } finally{
+      //console.log("Posts receiveed from server: ", data);
+    }
   };
 
   const handleCreatePost = async (data: {
@@ -72,15 +163,23 @@ export default function StudentFeed() {
   }) => {
 
     try{
+      setIsLoading(true);
 
 
       const res = await fetch(`${API_BASE}/post`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-        body: JSON.stringify({category: data.category, title: data.title, description: data.description, postVisibility: data.visibility})
-      }
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          category: data.category, 
+          title: data.title, 
+          description: data.description, 
+          postVisibility: data.visibility,
+          name: data.visibility === "Public" ? JSON.parse(localStorage.getItem("campusVoice-user")).name : undefined,
+          studentID: data.visibility === "Public" ? JSON.parse(localStorage.getItem("campusVoice-user")).studentID : undefined
+        })
     });
 
       const serverdata = await res.json();
@@ -89,30 +188,17 @@ export default function StudentFeed() {
         throw new Error(serverdata.message || "Something went wrong");
       }
 
+      console.log("Post created sucessfully");
+
       // setPosts([newPost, ...posts]);
       toast.success('Post created successfully!');
 
 
-    } catch(err){
+    } catch(err: any){
       throw new Error(err.message);
     } finally{
-      console.log("Post created sucessfully");
+      setIsLoading(false);
     }
-
-    
-
-
-    // const newPost: Post = {
-    //   id: String(Date.now()),
-    //   ...data,
-    //   authorId: user?.name || 'unknown',
-    //   authorName: data.visibility === 'Anonymous' ? 'Anonymous' : user?.name || 'Student',
-    //   upvotes: 1,
-    //   hasUpvoted: true,
-    //   commentsCount: 0,
-    //   createdAt: new Date(),
-    // };
-    
   };
 
   const toggleCategory = (category: Category) => {
@@ -132,8 +218,11 @@ export default function StudentFeed() {
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
+      if(a.hasPendingVote|| b.hasPendingVote){
+        return 0;
+      }
       if (sortBy === 'trending') {
-        return b.upvotes - a.upvotes;
+        return Number(b.upVotes) - Number(a.upVotes);
       }
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
@@ -216,14 +305,22 @@ export default function StudentFeed() {
                 </Button>
               </div>
             ) : (
+             <AnimatePresence>{
               filteredPosts.map((post) => (
+                <motion.div
+                  key = {post._id}
+                  layout
+                  transition={{ duration: 0.25 }}
+                >
                 <PostCard
-                  key={post.id}
+                  key={post._id}
                   post={post}
                   onUpvote={handleUpvote}
                   onClick={(p) => toast.info(`Opening post: ${p.title}`)}
                 />
+                </motion.div>
               ))
+             }</AnimatePresence>
             )}
           </div>
         </div>
@@ -233,6 +330,7 @@ export default function StudentFeed() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onSubmit={handleCreatePost}
+        setLoading={isLoading}
       />
     </div>
   );

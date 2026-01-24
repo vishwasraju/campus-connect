@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { mockPosts } from '@/lib/mockData';
-import { Post, Category, CATEGORIES } from '@/lib/types';
+import { Category, CATEGORIES, RealPost } from '@/lib/types';
 import { 
   Search, 
   TrendingUp, 
@@ -38,17 +38,21 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { isAuthenticated } from './auth';
 
+const API_BASE = "http://localhost:3000/api";
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [user, setUser] = useState<{ name: string; role: 'student' | 'admin' } | null>(null);
-  const [posts, setPosts] = useState<Post[]>(mockPosts);
+  const [user, setUser] = useState<{ name: string; studentId: string, role: 'student' | 'admin' } | null>(null);
+  const [posts, setPosts] = useState<RealPost[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<Category | 'all'>('all');
-  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'public' | 'private'>('all');
+  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'Public' | 'Anonymous'>('all');
 
   useEffect(() => {
+
+    const role = "admin";
     
-    if (isAuthenticated()) {
+    if (isAuthenticated(role)) {
       const stored = localStorage.getItem('campusVoice-user');
       const parsed = JSON.parse(stored);
       if (parsed.role !== 'admin') {
@@ -61,32 +65,89 @@ export default function AdminDashboard() {
     }
   }, [navigate]);
 
+  const fetchPosts = async () => {
+      try{
+  
+        const res = await fetch(`${API_BASE}/posts`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "Application/json",
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        })
+  
+        const data = await res.json();
+  
+         if(!res.ok){
+          throw new Error(data.message || "Internal server Error");
+        }
+  
+        console.log("Mock data: ", mockPosts);
+  
+        setPosts(data);
+  
+        console.log("Posts data received from server: ", data);
+  
+      } catch(err){
+        throw new Error(err.message);
+      } finally{
+        //console.log("Posts receiveed from server: ", data);
+      }
+    };
+
   const handleLogout = () => {
-    localStorage.removeItem('campusvoice_user');
+    localStorage.removeItem('campusVoice-user');
+    localStorage.removeItem('token');
     toast.success('Logged out successfully');
     navigate('/');
   };
 
-  const handleDeletePost = (postId: string) => {
-    setPosts(posts.filter(p => p.id !== postId));
-    toast.success('Post deleted');
+  const handleDeletePost = async (postId: string) => {
+
+
+    try{
+
+      const res = await fetch(`${API_BASE}/post/${postId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type":"Application/json",
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      const data = await res.json();
+
+      if(!res.ok){
+        toast.error(`${data.message}` || "Server Error, post cannot be deleted")
+      }
+
+      toast.success('Post deleted');
+      fetchPosts();
+
+    } catch(err: any){
+      throw new Error(err.message || "Internal server error");
+    }
   };
+
+  useEffect(() => {
+      fetchPosts();
+    }, []);
 
   const filteredPosts = posts
     .filter(post => {
       const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         post.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = categoryFilter === 'all' || post.category === categoryFilter;
-      const matchesVisibility = visibilityFilter === 'all' || post.visibility === visibilityFilter;
+      const matchesVisibility = visibilityFilter === 'all' || post.postVisibility === visibilityFilter;
       return matchesSearch && matchesCategory && matchesVisibility;
     })
-    .sort((a, b) => b.upvotes - a.upvotes);
+    .sort((a, b) => Number(b.upVotes) - Number(a.upVotes));
 
   const stats = {
     totalPosts: posts.length,
-    totalUpvotes: posts.reduce((sum, p) => sum + p.upvotes, 0),
-    totalComments: posts.reduce((sum, p) => sum + p.commentsCount, 0),
-    anonymousPosts: posts.filter(p => p.visibility === 'private').length,
+    totalUpvotes: posts.reduce((sum, p) => sum + Number(p.upVotes), 0),
+    totalComments: posts.reduce((sum, p) => sum + Number(p.commentsCount), 0),
+    anonymousPosts: posts.filter(p => p.postVisibility === 'Anonymous').length,
   };
 
   const categoryStats = CATEGORIES.map(cat => ({
@@ -201,7 +262,7 @@ export default function AdminDashboard() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={visibilityFilter} onValueChange={(v) => setVisibilityFilter(v as 'all' | 'public' | 'private')}>
+          <Select value={visibilityFilter} onValueChange={(v) => setVisibilityFilter(v as 'all' | 'Public' | 'Anonymous')}>
             <SelectTrigger className="w-full sm:w-[150px]">
               <SelectValue placeholder="Visibility" />
             </SelectTrigger>
@@ -236,11 +297,11 @@ export default function AdminDashboard() {
                   </TableRow>
                 ) : (
                   filteredPosts.map((post) => (
-                    <TableRow key={post.id}>
+                    <TableRow key={post._id}>
                       <TableCell>
                         <div className="flex items-center gap-1 text-sm font-medium">
                           <ChevronUp className="h-4 w-4 text-upvote" />
-                          {post.upvotes}
+                          {post.upVotes}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -256,7 +317,7 @@ export default function AdminDashboard() {
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
                         <div className="flex items-center gap-1.5 text-sm">
-                          {post.visibility === 'private' ? (
+                          {post.postVisibility === 'Anonymous' ? (
                             <>
                               <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
                               <span className="text-muted-foreground">Anonymous</span>
@@ -264,7 +325,7 @@ export default function AdminDashboard() {
                           ) : (
                             <>
                               <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                              {post.authorName}
+                              {post.name}
                             </>
                           )}
                         </div>
@@ -277,7 +338,7 @@ export default function AdminDashboard() {
                           variant="ghost"
                           size="icon"
                           className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDeletePost(post.id)}
+                          onClick={() => handleDeletePost(post._id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

@@ -3,6 +3,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const {z} = require("zod");
 const User = require("./user");
+const Admin = require("./admin");
 const sendOtpMail = require("./mailer");
 
 const router = express.Router();
@@ -28,6 +29,48 @@ const signupSchema = z.object({
     phone: z.string().length(10),
     email: z.email()
 })
+
+const adminLoginSchema = z.object({
+    email: z.email(),
+    password: z.string().min(6)
+});
+
+router.post("/admin-login", async (req, res) => {
+
+    const {success, data} = adminLoginSchema.safeParse(req.body);
+
+    console.log(data);
+
+    if(!success){
+        res.status(400).json({message: "Invalid format"});
+        return;
+    }
+
+    const adminDB = await Admin.findOne({ email: data.email });
+    console.log(adminDB.email, adminDB.password);
+
+    if(!adminDB){
+        res.status(401).json({message: "Unauthorized: Invalid email or password"});
+        return;
+    }
+
+    if(data.password !== adminDB.password){
+        res.status(401).json({message: "Unauthorized: Invalid email or password"});
+        return;
+    }
+
+    const token = jwt.sign({
+        userId: adminDB._id,
+        role: 'admin',
+        email: adminDB.email,
+    }, process.env.JWT_SECRET,
+        {expiresIn: "7d"}
+    );
+
+    res.status(200).json({token});
+
+
+});
 
 router.post("/login", async (req, res) => {
 
@@ -78,7 +121,7 @@ router.post("/login/verify-otp", async (req, res) => {
 
     console.log("Name: ", user.name, "Token: ", token);
 
-    res.json({
+    res.status(200).json({
       token,
       role: user.role,
       studentID: user.studentID,

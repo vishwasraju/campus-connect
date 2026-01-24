@@ -5,7 +5,7 @@ export type Category =
   | 'food'
   | 'other';
 
-export type PostVisibility = 'public' | 'private';
+export type PostVisibility = 'Public' | 'Anonymous';
 
 export interface User {
   id: string;
@@ -13,6 +13,21 @@ export interface User {
   name: string;
   email: string;
   role: 'student' | 'admin';
+}
+
+export interface RealPost{
+  _id: string;
+  title: string;
+  description: string;
+  category: Category;
+  postVisibility: PostVisibility;
+  studentID: string;
+  name: string;
+  upVotes: string;
+  hasUpvoted: boolean;
+  commentsCount: string;
+  createdAt: Date;
+  hasPendingVote: boolean;
 }
 
 export interface Post {

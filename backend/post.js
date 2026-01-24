@@ -43,9 +43,17 @@ const postSchema = new mongoose.Schema({
         }
     },
 
+    studentID: {
+        type: String,
+        required: function(){
+            return this.postVisibility === 'Public';
+        }
+    },
+
     upVotes: {
         type: Number,
-        default: 0
+        default: 0,
+        min: 0
     },
 
     comments: [commentSchema]

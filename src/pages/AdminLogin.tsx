@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { isAuthenticated } from './auth';
+
+const API_BASE = "http://localhost:3000/auth";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -13,6 +16,20 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+      
+      if (isAuthenticated('admin')) {
+        const stored = localStorage.getItem('campusVoice-user');
+        const parsed = JSON.parse(stored);
+        if (parsed.role !== 'admin') {
+          navigate('/admin-login');
+          return;
+        }
+      } else {
+        navigate('/admin-login');
+      }
+    }, [navigate]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -28,21 +45,50 @@ export default function AdminLogin() {
     e.preventDefault();
     if (!validate()) return;
 
-    setIsLoading(true);
+    try{
+
+      setIsLoading(true);
+
+      const res = await fetch(`${API_BASE}/admin-login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "Application/json"
+        },
+        body: JSON.stringify({"email": email, "password": password})
+      });
+
+      const data = await res.json();
+
+      if(!res.ok){
+        throw new Error(data.message);
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('campusVoice-user', 
+        JSON.stringify({
+          role: 'admin'
+        })
+      );
+
+      toast.success('Welcome back, Principal!');
+      navigate('/admin');
+
+    } catch(err: any){
+      setErrors(err);
+    } finally{
+        setIsLoading(false);
+    }
     
-    // Simulate login
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // // Simulate login
+    // await new Promise(resolve => setTimeout(resolve, 1500));
     
-    setIsLoading(false);
-    toast.success('Welcome back, Principal!');
-    
-    // Store mock admin in localStorage for demo
-    localStorage.setItem('campusvoice_user', JSON.stringify({
-      id: 'admin1',
-      studentId: 'ADMIN001',
-      name: 'Dr. Principal',
-      role: 'admin'
-    }));
+    // // Store mock admin in localStorage for demo
+    // localStorage.setItem('campusvoice_user', JSON.stringify({
+    //   id: 'admin1',
+    //   studentId: 'ADMIN001',
+    //   name: 'Dr. Principal',
+    //   role: 'admin'
+    // }));
     
     navigate('/admin');
   };

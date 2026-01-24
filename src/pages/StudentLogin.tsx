@@ -24,7 +24,7 @@ export default function StudentLogin() {
   const [resendOTPTimer, setResendOTPTimer] = useState(10);
 
   useEffect(() => {
-    return isAuthenticated() ? navigate("/feed") : console.log("User not logged in");
+    return isAuthenticated('student') ? navigate("/feed") : console.log("User not logged in");
   });
 
   const handleSendOTP = async (e: React.FormEvent) => {

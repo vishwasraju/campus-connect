@@ -2,9 +2,11 @@ import {jwtDecode} from "jwt-decode";
 
 type jwtPayload = {
     exp: number
+    userId: string
+    role: string
 }
 
-export const isAuthenticated = () => {
+export const isAuthenticated = (role: string) => {
     const token = localStorage.getItem("token");
     if(!token) return false;
 
@@ -16,6 +18,12 @@ export const isAuthenticated = () => {
         console.log("No decoded.exp");
         return false;
     }
+
+    if(decoded.role !== role){
+        return false;
+    }
+
+    console.log("Decoded: ", decoded);
 
     return decoded.exp * 1000 > Date.now()
     } catch(err: any){
