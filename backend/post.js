@@ -4,6 +4,7 @@ const commentSchema = new mongoose.Schema({
 
     name: {
         type: String,
+        required: true
     },
 
     text: {
@@ -60,4 +61,7 @@ const postSchema = new mongoose.Schema({
 
 }, {timestamps: true});
 
-module.exports = mongoose.model("Posts", postSchema);
+const Post = mongoose.model("Posts", postSchema);
+const Comment = mongoose.model("Comment", commentSchema);
+
+module.exports = {Post, Comment};

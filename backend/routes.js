@@ -1,7 +1,7 @@
 const express = require('express');
 const {z} = require('zod');
 const {authMiddleWare, adminMiddleWare} = require('./auth.middleware');
-const Post = require('./post');
+const {Post, Comment} = require('./post');
 const Vote = require('./voteSchema');
 const mongoose = require('mongoose');
 
@@ -14,6 +14,12 @@ const postSchema = z.object({
     name: z.string().optional(),
     studentID: z.string().length(10).optional()
 });
+
+const commentZodSchema = z.object({
+    postID: z.string(),
+    comment: z.string(),
+    name: z.string()
+})
 
 const router = express.Router();
 
@@ -55,7 +61,7 @@ router.get("/posts", authMiddleWare, async (req, res) => {
 
         const postIds = fetchPosts.map(post => post._id);
         const userVotes = await Vote.find({
-            userID: req.user.userId,
+            userID: req.user,
             postID: {$in: postIds}
         }).select('postID');
         const votedPostIds = new Set(userVotes.map(vote => vote.postID.toString()));
@@ -64,14 +70,13 @@ router.get("/posts", authMiddleWare, async (req, res) => {
             hasUpvoted: votedPostIds.has(post._id.toString()),
             commentsCount: post.comments.length,
             createdAt: post.createdAt.toString(),
-            comments: undefined
+
         }));
 
 
         res.status(201).json(postsWithUpvoteStatus);
 
     } catch(err){
-        console.error(err);
         return res.status(500).json({message: err.message || "Internal Server Error"});
     }
 
@@ -79,7 +84,7 @@ router.get("/posts", authMiddleWare, async (req, res) => {
 
 router.post("/post/:postId/vote", authMiddleWare, async (req, res) => {
 
-    const userId = req.user.userId;
+    const userId = req.user;
     const postId = req.params.postId;
 
 
@@ -150,6 +155,42 @@ router.delete("/post/:postId", authMiddleWare, adminMiddleWare, async (req, res)
         return res.status(500).json({message: err.message || "Internal server error"});
     }
     
+});
+
+router.post("/:postId/comment", authMiddleWare, async (req, res) => {
+
+    try{
+        const {success, data} = commentZodSchema.safeParse(req.body);
+
+        if(!success){
+            res.status(400).json({message: "Invalid format"});
+            return;
+        }
+
+    const postId = req.params.postId;
+    if(!mongoose.Types.ObjectId.isValid(postId)){
+        res.status(400).json({message: "Invalid post Id"});
+        return;
+    }
+
+    await Post.findByIdAndUpdate(
+        postId,
+        {
+            $push: {
+                comments: {
+                    name: data.name,
+                    text: data.comment
+                }
+            }
+        },
+        {new: true, runValidators: true}
+    );
+
+    return res.status(201).json({message: "Comment added successfully"});
+    } catch(err){
+        return res.status(500).json({message: err.message || "Internal server error"});
+    }
+
 });
 
 module.exports = router;
