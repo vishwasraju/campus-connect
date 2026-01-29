@@ -23,6 +23,6 @@ app.get("/", (req, res) => {
   res.json({ message: "Server is"});
 });
 
-app.listen(3000, (req, res) => {
+app.listen(process.env.PORT || 3000, (req, res) => {
   console.log("Server running on port 3000");
 });

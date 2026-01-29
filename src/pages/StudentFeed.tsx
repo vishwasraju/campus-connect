@@ -18,8 +18,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AnimatePresence, motion } from 'framer-motion';
 import { isAuthenticated } from './auth';
+import { PostDetailDialog } from '@/components/PostDetailDialog';
 
-const API_BASE = "https://campus-connect-phi-lime.vercel.app/api";
+const API_BASE = "http://localhost:3000/api";
 
 type SortOption = 'trending' | 'latest';
 
@@ -28,7 +29,7 @@ export default function StudentFeed() {
   const navigate = useNavigate();
   const [user, setUser] = useState<{ name: string; studentId: string; role: 'student' | 'admin' } | null>(null);
   const [posts, setPosts] = useState<RealPost[]>([]);
-  const [realPosts, setRealPosts] = useState<RealPost[]>([]);
+  const [selectedPost, setSelectedPost] = useState<RealPost[]>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('trending');
@@ -82,8 +83,8 @@ export default function StudentFeed() {
     const res = await fetch(`${API_BASE}/post/${postId}/vote`, {
       method: "POST",
       headers: {
-        "Content-Type":"Aplication/json",
-        Authorization: `Bearer ${localStorage.getItem('token')}`
+        "Content-Type":"application/json",
+         Authorization: `Bearer ${localStorage.getItem('token')}`
       }
     });
 
@@ -227,6 +228,16 @@ useEffect(() => {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
+  const handlePostCardClick = (post) => {
+
+    setSelectedPost(post);
+
+    toast.info(`Opening post: ${post.title}`);
+    
+    
+
+  }
+
   if (!user) return null;
 
   return (
@@ -316,7 +327,7 @@ useEffect(() => {
                   key={post._id}
                   post={post}
                   onUpvote={handleUpvote}
-                  onClick={(p) => toast.info(`Opening post: ${p.title}`)}
+                  onClick={(post) => handlePostCardClick(post)}
                 />
                 </motion.div>
               ))
@@ -331,6 +342,14 @@ useEffect(() => {
         onOpenChange={setCreateDialogOpen}
         onSubmit={handleCreatePost}
         setLoading={isLoading}
+      />
+
+      <PostDetailDialog
+        post={selectedPost}
+        open={!!selectedPost}
+        onOpenChange={(open) => !open && setSelectedPost(null)}
+        onUpvote={handleUpvote}
+        userName={user?.name || 'Student'}
       />
     </div>
   );

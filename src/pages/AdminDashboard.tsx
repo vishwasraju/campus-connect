@@ -38,7 +38,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { isAuthenticated } from './auth';
 
-const API_BASE = "https://campus-connect-phi-lime.vercel.app/api";
+const API_BASE = "http://localhost:3000/api";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();

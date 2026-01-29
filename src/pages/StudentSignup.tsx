@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Loader2, CheckCircle, Upload, Camera, Wand2, Edit3, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API_BASE = "https://campus-connect-phi-lime.vercel.app/auth";
+const API_BASE = "http://localhost:3000/auth";
 type Step = 'method' | 'upload' | 'details' | 'otp';
 type Method = 'autodetect' | 'manual';
 

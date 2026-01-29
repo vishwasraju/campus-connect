@@ -28,6 +28,7 @@ export interface RealPost{
   commentsCount: string;
   createdAt: Date;
   hasPendingVote: boolean;
+  comments: Comment;
 }
 
 export interface Post {
@@ -45,11 +46,9 @@ export interface Post {
 }
 
 export interface Comment {
-  id: string;
-  postId: string;
-  authorId: string;
-  authorName: string;
-  content: string;
+  _id: string;
+  name: string;
+  text: string;
   createdAt: Date;
 }
 

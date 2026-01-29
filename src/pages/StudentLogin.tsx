@@ -9,7 +9,7 @@ import { ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { isAuthenticated } from './auth';
 
-const API_BASE = "https://campus-connect-phi-lime.vercel.app/auth";
+const API_BASE = "http://localhost:3000/auth";
 
 
 type Step = 'studentId' | 'otp';
