@@ -25,6 +25,8 @@ app.get("/", (req, res) => {
   res.json({ message: "Server is"});
 });
 
-app.listen(process.env.PORT || 3000, (req, res) => {
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, (req, res) => {
   console.log("Server running on port 3000");
 });
